@@ -47,7 +47,7 @@ def depthFirstSearch(problem):
                 return actions
             # add the node to the explored set
             explored.add(node)
-            #expand the chosen node, adding the resulting nodes to the frontier
+            # expand the chosen node, adding the resulting nodes to the frontier
             successors = problem.successorStates(node)
             for n, a, d in successors:
                 # only if not in the frontier or explored set
@@ -88,7 +88,7 @@ def breadthFirstSearch(problem):
                 return actions
             # add the node to the explored set
             explored.add(node)
-            #expand the chosen node, adding the resulting nodes to the frontier
+            # expand the chosen node, adding the resulting nodes to the frontier
             successors = problem.successorStates(node)
             for n, a, d in successors:
                 # only if not in the frontier or explored set
@@ -128,7 +128,7 @@ def uniformCostSearch(problem):
                 return actions
             # add the node to the explored set
             explored.add(node)
-            #expand the chosen node, adding the resulting nodes to the frontier
+            # expand the chosen node, adding the resulting nodes to the frontier
             successors = problem.successorStates(node)
             for n, a, d in successors:
                 # only if not in the frontier or explored set
@@ -162,7 +162,7 @@ def aStarSearch(problem, heuristic):
     while not fringe.isEmpty():
         # choose a leaf node and remove it from the frontier
         # actions list is what is in fringe already
-        # chooses the lowest-cost node in frontier 
+        # chooses the lowest-cost node in frontier
         node, actions, dist = fringe.pop()
         # if node is not already explored
         if node not in explored:
@@ -172,7 +172,7 @@ def aStarSearch(problem, heuristic):
                 return actions
             # add the node to the explored set
             explored.add(node)
-            #expand the chosen node, adding the resulting nodes to the frontier
+            # expand the chosen node, adding the resulting nodes to the frontier
             successors = problem.successorStates(node)
             for n, a, d in successors:
                 # only if not in the frontier or explored set
@@ -180,7 +180,7 @@ def aStarSearch(problem, heuristic):
                     # add a to the an actions list
                     newActions = actions + [a]
                     newDist = dist + d
-                    # priority is the total dist/cost + heuristic function result passing 
+                    # priority is the total dist/cost + heuristic function result passing
                     # node state and problem
                     fringe.push((n, newActions, newDist), heuristic(n, problem) + newDist)
     # return failure when the fringe is empty

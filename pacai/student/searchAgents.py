@@ -13,6 +13,7 @@ from pacai.core.search.position import PositionSearchProblem
 from pacai.core.search.problem import SearchProblem
 from pacai.agents.base import BaseAgent
 from pacai.agents.search.base import SearchAgent
+from pacai.core.directions import Directions
 
 class CornersProblem(SearchProblem):
     """
@@ -50,6 +51,9 @@ class CornersProblem(SearchProblem):
     ```
     """
 
+    # The only parts of the game state you need to reference in your implementation are the
+    # starting Pac-Man position and the location of the four corners.
+
     def __init__(self, startingGameState):
         super().__init__()
 
@@ -64,7 +68,49 @@ class CornersProblem(SearchProblem):
                 logging.warning('Warning: no food in corner ' + str(corner))
 
         # *** Your Code Here ***
-        raise NotImplementedError()
+    
+    def startingState(self):
+        # Returns the start state (in your search space,
+        # NOT a `pacai.core.gamestate.AbstractGameState`).
+        # no corners visited at beginning
+        return (self.startingPosition, ())
+
+    def isGoal(self, state):
+        # Returns whether this search state is a goal state of the problem.
+        # goal: all four visited
+        for corner in self.corners:
+            if corner not in state[1]:
+                return False
+        return True
+
+    def successorStates(self, state):
+        # Returns successor states, the actions they require, and a cost of 1.
+        # get currents from the state
+        currentPosition, visitedCorners = state
+
+        successors = []
+
+        for action in Directions.CARDINAL:
+            x, y = currentPosition
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            hitsWall = self.walls[nextx][nexty]
+
+            if (not hitsWall):
+                # Construct the successor.
+                # copy
+                cornersVisted = tuple(visitedCorners)
+                # see if next x, y is a corner
+                if (nextx, nexty) in self.corners:
+                    # see if not already visited
+                    if (nextx, nexty) not in cornersVisted:
+                        cornersVisted += ((nextx, nexty),)
+                successorStates = ((nextx, nexty), cornersVisted)
+                # successor states actions cost
+                successors.append((successorStates, action, 1))
+                
+        self._numExpanded += 1
+        return successors
 
     def actionsCost(self, actions):
         """
