@@ -57,7 +57,7 @@ def depthFirstSearch(problem):
                     newActions = actions + [a]
                     fringe.push((n, newActions, d))
     # return failure when the fringe is empty
-    return None
+    return exit(1)
     
 def breadthFirstSearch(problem):
     """
@@ -97,7 +97,7 @@ def breadthFirstSearch(problem):
                     newActions = actions + [a]
                     fringe.push((n, newActions, d))
     # return failure when the fringe is empty
-    return None
+    return exit(1)
 
 def uniformCostSearch(problem):
     """
@@ -139,7 +139,7 @@ def uniformCostSearch(problem):
                     # priority is the total dist/cost
                     fringe.push((n, newActions, newDist), newDist)
     # return failure when the fringe is empty
-    return None
+    return exit(1)
     # 619
 
 def aStarSearch(problem, heuristic):
@@ -184,5 +184,5 @@ def aStarSearch(problem, heuristic):
                     # node state and problem
                     fringe.push((n, newActions, newDist), heuristic(n, problem) + newDist)
     # return failure when the fringe is empty
-    return None
+    return exit(1)
     # 538 nodes
