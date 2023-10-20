@@ -8,12 +8,14 @@ Good luck and happy searching!
 import logging
 
 from pacai.core.actions import Actions
-from pacai.core.search import heuristic
+# from pacai.core.search import heuristic
 from pacai.core.search.position import PositionSearchProblem
 from pacai.core.search.problem import SearchProblem
 from pacai.agents.base import BaseAgent
 from pacai.agents.search.base import SearchAgent
 from pacai.core.directions import Directions
+import pacai.core.distance as dist
+# from pacai.student import search
 
 class CornersProblem(SearchProblem):
     """
@@ -146,7 +148,34 @@ def cornersHeuristic(state, problem):
     # walls = problem.walls  # These are the walls of the maze, as a Grid.
 
     # *** Your Code Here ***
-    return heuristic.null(state, problem)  # Default to trivial solution
+    corners = problem.corners
+    currentPosition, visitedCorners = state
+    # corners that need to be visited
+    toVisit = []
+    for corner in corners:
+        if corner not in visitedCorners:
+            toVisit.append(corner)
+    # total returned for heuristic
+    total = 0
+    # loop until all corners visited
+    while toVisit != []:
+        # find closest corner with manhattan
+        m = 999
+        for corner in toVisit:
+            d = dist.manhattan(currentPosition, corner)
+            if d < m:
+                m = d
+                closest = corner
+        # remove closest from toVisit
+        toVisit.remove(closest)
+        # update curr pos to that corner
+        currentPosition = closest
+        # add dist to total for the heuristic
+        total += d
+    
+    return total
+    
+    # return heuristic.null(state, problem)  # Default to trivial solution
 
 def foodHeuristic(state, problem):
     """
@@ -180,7 +209,18 @@ def foodHeuristic(state, problem):
     position, foodGrid = state
 
     # *** Your Code Here ***
-    return heuristic.null(state, problem)  # Default to the null heuristic.
+    food = foodGrid.asList()
+    # check if there is no more food
+    if len(food) == 0:
+        return 0
+    # find the max dist from the position to a food piece
+    m = -999
+    for f in food:
+        d = dist.manhattan(position, f)
+        if d > m:
+            m = d
+    return m
+    # return heuristic.null(state, problem)  # Default to the null heuristic.
 
 class ClosestDotSearchAgent(SearchAgent):
     """
@@ -222,6 +262,7 @@ class ClosestDotSearchAgent(SearchAgent):
         # problem = AnyFoodSearchProblem(gameState)
 
         # *** Your Code Here ***
+        # euclidean
         raise NotImplementedError()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
