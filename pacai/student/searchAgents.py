@@ -15,7 +15,7 @@ from pacai.agents.base import BaseAgent
 from pacai.agents.search.base import SearchAgent
 from pacai.core.directions import Directions
 import pacai.core.distance as dist
-# from pacai.student import search
+from pacai.student import search
 
 class CornersProblem(SearchProblem):
     """
@@ -158,9 +158,10 @@ def cornersHeuristic(state, problem):
     # total returned for heuristic
     total = 0
     # loop until all corners visited
-    while toVisit != []:
+    while toVisit:
         # find closest corner with manhattan
         m = 999
+        d = 0
         for corner in toVisit:
             d = dist.manhattan(currentPosition, corner)
             if d < m:
@@ -262,8 +263,9 @@ class ClosestDotSearchAgent(SearchAgent):
         # problem = AnyFoodSearchProblem(gameState)
 
         # *** Your Code Here ***
-        # euclidean
-        raise NotImplementedError()
+        problem = AnyFoodSearchProblem(gameState)
+        # run search
+        return search.uniformCostSearch(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -291,6 +293,13 @@ class AnyFoodSearchProblem(PositionSearchProblem):
 
         # Store the food for later reference.
         self.food = gameState.getFood()
+    
+    # new goal test
+    def isGoal(self, state):
+        # if the position (state) is in the food list
+        if state in self.food.asList():
+            return True
+        return False
 
 class ApproximateSearchAgent(BaseAgent):
     """
