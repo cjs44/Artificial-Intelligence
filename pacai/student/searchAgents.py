@@ -160,19 +160,18 @@ def cornersHeuristic(state, problem):
     # loop until all corners visited
     while toVisit:
         # find closest corner with manhattan
-        m = 999
-        d = 0
+        distList = []
         for corner in toVisit:
+            # cost from normal is 106
             d = dist.manhattan(currentPosition, corner)
-            if d < m:
-                m = d
-                closest = corner
+            distList.append((corner, d))
+            # Path found with total cost of 106 in 0.0 seconds
+        closestCorner, closestDist = min(distList)
         # remove closest from toVisit
-        toVisit.remove(closest)
-        # update curr pos to that corner
-        currentPosition = closest
+        toVisit.remove(closestCorner)
         # add dist to total for the heuristic
-        total += d
+        total += closestDist
+        currentPosition = closestCorner
     
     return total
     
@@ -217,7 +216,8 @@ def foodHeuristic(state, problem):
     # find the max dist from the position to a food piece
     m = -999
     for f in food:
-        d = dist.manhattan(position, f)
+        # use maze dist not manhattan
+        d = dist.maze(position, f, problem.startingGameState)
         if d > m:
             m = d
     return m
