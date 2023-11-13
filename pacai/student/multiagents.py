@@ -2,6 +2,8 @@ import random
 
 from pacai.agents.base import BaseAgent
 from pacai.agents.search.multiagent import MultiAgentSearchAgent
+import pacai.core.distance as dist
+from pacai.core.directions import Directions
 
 class ReflexAgent(BaseAgent):
     """
@@ -57,8 +59,40 @@ class ReflexAgent(BaseAgent):
         # newScaredTimes = [ghostState.getScaredTimer() for ghostState in newGhostStates]
 
         # *** Your Code Here ***
+        newPosition = successorGameState.getPacmanPosition()
+        oldFood = currentGameState.getFood()
+        newGhostStates = successorGameState.getGhostStates()
 
-        return successorGameState.getScore()
+        # avg dist to ghosts using manhattan
+        distGhost = [dist.manhattan(newPosition, ghostState.getPosition()) for ghostState in
+                     newGhostStates]
+        ghostSum = sum(distGhost)
+        # average the dist to ghosts (use number of agents minus pacman)
+        ghostAvg = ghostSum / (currentGameState.getNumAgents() - 1)
+        # reciprocal
+        # error: division by 0
+        # add something to the denominator so it never divides by 0
+        # ghosts should lower the score so subtract later
+        ghostScore = 1.0 / (ghostAvg + 0.001)
+
+        # min dist to food
+        distFood = [dist.manhattan(newPosition, food) for food in oldFood.asList()]
+        # no food left, make it a large value
+        if not distFood:
+            # large number to lower food score but not be 0
+            distFood = [1000]
+        closestFood = min(distFood)
+        # reciprocal
+        # error: division by 0
+        # add something to the denominator so it never divides by 0
+        foodScore = 1.0 / (closestFood + 0.001)
+
+        # the current score.
+        score = successorGameState.getScore()
+
+        f = score + foodScore - ghostScore
+
+        return f
 
 class MinimaxAgent(MultiAgentSearchAgent):
     """
@@ -90,6 +124,74 @@ class MinimaxAgent(MultiAgentSearchAgent):
     def __init__(self, index, **kwargs):
         super().__init__(index, **kwargs)
 
+    # Returns the minimax action from the current gameState
+    
+    def getAction(self, gamestate):
+        # helper functs
+        # pseudocode
+        # function MAX-VALUE(state) returns a utility value
+        # if TERMINAL-TEST(state) then return UTILITY(state)
+        # v ← −∞
+        # for each a in ACTIONS(state) do
+        # v ← MAX(v, MIN-VALUE(RESULT(s, a)))
+        # return v
+        def maxValue(state, index, depth):
+            # number of agents
+            numAgents = state.getNumAgents()
+            # game over or too deep
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            value = -9999
+            legalActions = state.getLegalActions(index)
+            # take out stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            for a in legalActions:
+                successorGameState = state.generateSuccessor(index, a)
+                # last one - pacman
+                if index == numAgents - 1:
+                    value = max(value, minValue(successorGameState, index, depth + 1))
+                else:
+                    value = max(value, minValue(successorGameState, index + 1, depth + 1))
+            return value
+
+        # pseudocode
+        # function MIN-VALUE(state) returns a utility value
+        # if TERMINAL-TEST(state) then return UTILITY(state)
+        # v ← ∞
+        # for each a in ACTIONS(state) do
+        # v ← MIN(v, MAX-VALUE(RESULT(s, a)))
+        # return v
+        def minValue(state, index, depth):
+            # number of agents
+            numAgents = state.getNumAgents()
+            # game over or too deep
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            value = 9999
+            legalActions = state.getLegalActions(index)
+            # take out stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            for a in legalActions:
+                successorGameState = state.generateSuccessor(index, a)
+                # last one - pacman
+                if index == numAgents - 1:
+                    value = min(value, maxValue(successorGameState, index, depth + 1))
+                else:
+                    value = min(value, maxValue(successorGameState, index + 1, depth + 1))
+            return value
+        
+        # pseudocode
+        # function MINIMAX-DECISION(state) returns an action
+        # return arg maxa ∈ ACTIONS(s) MIN-VALUE(RESULT(state, a))
+        legalActions = gamestate.getLegalActions(0)
+        if Directions.STOP in legalActions:
+            legalActions.remove(Directions.STOP)
+        values = [(minValue(gamestate.generateSuccessor(0, a), 1, 1), a) for a in legalActions]
+        bestValue, bestAction = max(values)
+        return bestAction
+
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     A minimax agent with alpha-beta pruning.
@@ -104,6 +206,97 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
     def __init__(self, index, **kwargs):
         super().__init__(index, **kwargs)
+
+    # Returns the minimax action from the current gameState
+    def getAction(self, gamestate):
+        # helper functs
+        # pseudocode
+        # function MAX-VALUE(state,α, β) returns a utility value
+        # if TERMINAL-TEST(state) then return UTILITY(state)
+        # v ← −∞
+        # for each a in ACTIONS(state) do
+        # v ← MAX(v, MIN-VALUE(RESULT(s,a),α, β))
+        # if v ≥ β then return v
+        # α ← MAX(α, v)
+        # return v
+        def maxValue(state, index, depth, alpha, beta):
+            # number of agents
+            numAgents = state.getNumAgents()
+            # game over or too deep
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            value = -9999
+            legalActions = state.getLegalActions(index)
+            # take out stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            for a in legalActions:
+                successorGameState = state.generateSuccessor(index, a)
+                if index == numAgents - 1:
+                    value = max(value, minValue(successorGameState, index, depth + 1, alpha, beta))
+                else:
+                    value = max(value, minValue(successorGameState, index + 1, depth + 1, alpha,
+                    beta))
+                alpha = max(alpha, value)
+                if value >= beta:
+                    return value
+            return value
+        
+        # pseudocode
+        # function MIN-VALUE(state,α, β) returns a utility value
+        # if TERMINAL-TEST(state) then return UTILITY(state)
+        # v ← +∞
+        # for each a in ACTIONS(state) do
+        # v ← MIN(v, MAX-VALUE(RESULT(s,a) ,α, β))
+        # if v ≤ α then return v
+        # β ← MIN(β, v)
+        # return v
+        def minValue(state, index, depth, alpha, beta):
+            # number of agents
+            numAgents = state.getNumAgents()
+            # game over or too deep
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            value = 9999
+            legalActions = state.getLegalActions(index)
+            # take out stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            for a in legalActions:
+                successorGameState = state.generateSuccessor(index, a)
+                if index == numAgents - 1:
+                    value = min(value, maxValue(successorGameState, index, depth + 1, alpha, beta))
+                else:
+                    value = min(value, maxValue(successorGameState, index + 1, depth + 1, alpha,
+                    beta))
+                beta = min(beta, value)
+                if value <= alpha:
+                    return value
+            return value
+
+        # pseudocode
+        # function ALPHA-BETA-SEARCH(state) returns an action
+        # v ← MAX-VALUE(state,−∞,+∞)
+        # return the action in ACTIONS(state) with value v
+        legalActions = gamestate.getLegalActions(0)
+        if Directions.STOP in legalActions:
+            legalActions.remove(Directions.STOP)
+        # set alpha and beta
+        alpha = -9999
+        beta = 9999
+        bestValue = -9999
+        bestAction = legalActions[0]
+        values = [(minValue(gamestate.generateSuccessor(0, a), 1, 1, alpha, beta), a) for a in
+                  legalActions]
+        for val in values:
+            valValue, valAction = val
+            if valValue > bestValue:
+                bestValue = valValue
+                bestAction = valAction
+            alpha = max(alpha, bestValue)
+            if bestValue >= beta:
+                return bestAction
+        return bestAction
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -122,14 +315,120 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
     def __init__(self, index, **kwargs):
         super().__init__(index, **kwargs)
 
+    # Returns the expectimax action from the current gameState
+    def getAction(self, gamestate):
+        # helpers
+        # pseudocode
+        # def maxValue(s)
+        # values = [value(s') for s' in successors(s)]
+        # return max(values)
+        def maxValue(state, index, depth):
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            # without index change -> invalid index error (calling for ghosts)
+            # only using this for pacman who has an index 0
+            index = 0
+            legalActions = state.getLegalActions(index)
+            # remove stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            values = [expValue(state.generateSuccessor(index, a), index + 1, depth + 1) for a in
+                      legalActions]
+            value = max(values)
+            return value
+
+        # pseudocode
+        # def expValue(s)
+        # values = [value(s') for s' in successors(s)]
+        # weights = [probability(s, s') for s' in successors(s)]
+        # return expectation(values, weights)
+        def expValue(state, index, depth):
+            # number of agents
+            numAgents = state.getNumAgents()
+            if state.isOver() or depth >= self.getTreeDepth():
+                return self.getEvaluationFunction()(state)
+            legalActions = state.getLegalActions(index)
+            # remove stop
+            if Directions.STOP in legalActions:
+                legalActions.remove(Directions.STOP)
+            value = 0
+            # each has equal probability
+            probability = 1.0 / len(legalActions)
+            for action in legalActions:
+                successorGameState = state.generateSuccessor(index, action)
+                if index == numAgents - 1:
+                    # multiply by probability/weight
+                    value += probability * maxValue(successorGameState, index, depth + 1)
+                else:
+                    # multiply by probability/weight
+                    value += probability * expValue(successorGameState, index + 1, depth)
+            return value
+        
+        # pseudocode
+        legalActions = gamestate.getLegalActions(0)
+        # remove stop
+        if Directions.STOP in legalActions:
+            legalActions.remove(Directions.STOP)
+        values = [(expValue(gamestate.generateSuccessor(0, a), 1, 1), a) for a in
+                  legalActions]
+        bestValue, bestAction = max(values)
+        return bestAction
+
 def betterEvaluationFunction(currentGameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable evaluation function.
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: I took my previous eval funtion and added consideration of how close the
+    ghosts were and how scared the ghosts were.
     """
 
-    return currentGameState.getScore()
+    newPosition = currentGameState.getPacmanPosition()
+    oldFood = currentGameState.getFood()
+    newGhostStates = currentGameState.getGhostStates()
+    newScaredTimes = [ghostState.getScaredTimer() for ghostState in newGhostStates]
+
+    # avg dist to ghosts using manhattan
+    distGhost = [dist.manhattan(newPosition, ghostState.getPosition()) for ghostState in
+                 newGhostStates]
+    ghostSum = sum(distGhost)
+    # average the dist to ghosts (use number of agents minus pacman)
+    ghostAvg = ghostSum / (currentGameState.getNumAgents() - 1)
+    ghostTotal = ghostAvg
+    # too close to a ghost
+    closestGhost = min(distGhost)
+    if (closestGhost < 2):
+        ghostTotal -= 100
+    # scared
+    for scared in newScaredTimes:
+        if scared == 0:
+            ghostTotal -= 25
+        # not scared
+        else:
+            ghostTotal += 50
+    # reciprocal
+    # error: division by 0
+    # add something to the denominator so it never divides by 0
+    # ghosts should lower the score so subtract later
+    ghostScore = 1.0 / (ghostTotal + 0.001)
+
+    # min dist to food
+    distFood = [dist.manhattan(newPosition, food) for food in oldFood.asList()]
+    # no food left, make it a large value
+    if not distFood:
+        # large number to lower food score but not be 0
+        distFood = [1000]
+    closestFood = min(distFood)
+    # reciprocal
+    # error: division by 0
+    # add something to the denominator so it never divides by 0
+    foodScore = 1.0 / (closestFood + 0.001)
+
+    # the current score.
+    score = currentGameState.getScore()
+
+    f = score + foodScore - ghostScore
+
+    return f
 
 class ContestAgent(MultiAgentSearchAgent):
     """
